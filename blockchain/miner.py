@@ -4,7 +4,7 @@ import requests
 import sys
 
 from uuid import uuid4
-
+import hashlib
 from timeit import default_timer as timer
 
 import random
@@ -24,9 +24,14 @@ def proof_of_work(last_proof):
     start = timer()
 
     print("Searching for next proof")
-    proof = 0
-    #  TODO: Your code here
-
+    print(f"(Attempt: {attempts}, Successes: {coins_mined})")
+    last_encoded = str(last_proof).encode()
+    last_hash = hashlib.sha256(last_encoded).hexdigest()
+    proof = 42424242
+    
+    while not valid_proof(last_hash, proof):
+        proof += 42
+    
     print("Proof found: " + str(proof) + " in " + str(timer() - start))
     return proof
 
@@ -38,9 +43,9 @@ def valid_proof(last_hash, proof):
 
     IE:  last_hash: ...AE9123456, new hash 123456888...
     """
-
-    # TODO: Your code here!
-    pass
+    encoded = str(proof).encode()
+    current_hash = hashlib.sha256(encoded).hexdigest()
+    return last_hash[-6:] == current_hash[:6]
 
 
 if __name__ == '__main__':
@@ -50,6 +55,7 @@ if __name__ == '__main__':
     else:
         node = "https://lambda-coin.herokuapp.com/api"
 
+    attempts = 1
     coins_mined = 0
 
     # Load or create ID
@@ -68,11 +74,11 @@ if __name__ == '__main__':
         data = r.json()
         new_proof = proof_of_work(data.get('proof'))
 
-        post_data = {"proof": new_proof,
-                     "id": id}
+        post_data = {"proof": new_proof, "id": id}
 
         r = requests.post(url=node + "/mine", json=post_data)
         data = r.json()
+        attempts += 1
         if data.get('message') == 'New Block Forged':
             coins_mined += 1
             print("Total coins mined: " + str(coins_mined))
